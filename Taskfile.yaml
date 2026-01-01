@@ -1,0 +1,54 @@
+version: '3'
+silent: true
+
+vars:
+  # Constants
+  REQUIREMENTS_FILE: 'requirements.txt'
+  VENV_DIR: '.venv'
+  DATA_DIR: '.data'
+  JSON_DATA_DIR: '.json_data'
+  CSV_DATA_DIR: '.csv_data'
+  ZIP_FILE: 'coros_export_20251126.zip'
+
+  # Build vars
+  ROOT: '{{.PWD}}'
+
+tasks:
+  load:
+    desc: Task that unzip data and parse it to CSV format
+    cmds:
+      - |
+        set -eo pipefail
+        echo "Creating Venv if it doesn't exist"
+        if [ ! -d "{{.ROOT}}/{{.VENV_DIR}}" ]; then
+          python3 -m venv {{.ROOT}}/{{.VENV_DIR}}
+        fi
+        echo "Installing requirements in Venv ..."
+        uv pip install -r {{.ROOT}}/{{.REQUIREMENTS_FILE}} -p {{.ROOT}}/{{.VENV_DIR}} --quiet
+        echo "Creating JSON data directory if it doesn't exist"
+        mkdir -p {{.ROOT}}/{{.JSON_DATA_DIR}}
+        echo "Unzip {{.ZIP_FILE}} to {{.DATA_DIR}}"
+        unzip -o {{.ROOT}}/{{.ZIP_FILE}} -d {{.ROOT}}/{{.DATA_DIR}} > /dev/null
+        for fit_file in {{.ROOT}}/{{.DATA_DIR}}/*.fit; do
+          filename=$(basename "$fit_file" .fit)
+          echo "Processing $fit_file to {{.ROOT}}/{{.JSON_DATA_DIR}}/${filename}.json"
+          {{.ROOT}}/{{.VENV_DIR}}/bin/fitjson --pretty -o "{{.JSON_DATA_DIR}}/${filename}.json" "$fit_file"
+        done
+        echo "Parsing JSON data to CSV ..."
+        python3 ./json_to_csv.py --json_dir {{.ROOT}}/{{.JSON_DATA_DIR}} --csv_dir {{.ROOT}}/{{.CSV_DATA_DIR}}
+    preconditions:
+      - sh: command -v python3
+        msg: "Python 3 is not installed. Please install it before continuing."
+      - sh: command -v pip
+        msg: "pip is not installed. Please install it before continuing."
+      - sh: command -v uv
+        msg: "uv is not installed. Please install it before continuing."
+      - sh: command -v unzip
+        msg: "unzip is not installed. Please install it before continuing."
+  
+  clean:
+    desc: Task that cleans the data directories
+    cmds:
+      - rm -rf {{.ROOT}}/{{.DATA_DIR}}
+      - rm -rf {{.ROOT}}/{{.JSON_DATA_DIR}}
+      - rm -rf {{.ROOT}}/{{.CSV_DATA_DIR}}
