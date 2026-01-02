@@ -8,19 +8,37 @@ def process_json_file(filepath):
     """Traite un fichier JSON provenant d'un fit de Coros, et en créé un CSV"""
     with open(filepath, 'r') as f:
         data = json.load(f)
-    all_records = []
+    all_data = {
+        "records": [],
+        "events": [],
+        "laps": [],
+        "sessions": []
+    }
     for row in data:
-        if row.get("frame_type") == "data_message" and row.get("name") == "record":
-            fields = row.get("fields")
-            record_data = {field.get("name"): field.get("value") for field in fields}
-            all_records.append(record_data)
-    pl.DataFrame(all_records).write_csv(csv_dir + '/' + os.path.basename(filepath).replace('.json', '.csv'))
+        fields = row.get("fields")
+        if fields:
+            row_data = {field.get("name"): field.get("value") for field in fields}
+            row_data["activity_id"] = os.path.basename(filepath).split('.')[0]
+            if row.get("frame_type") == "data_message" and row.get("name") == "record":
+                all_data["records"].append(row_data)
+            if row.get("frame_type") == "data_message" and row.get("name") == "event":
+                all_data["events"].append(row_data)
+            if row.get("frame_type") == "data_message" and row.get("name") == "lap":
+                all_data["laps"].append(row_data)
+            if row.get("frame_type") == "data_message" and row.get("name") == "session":
+                all_data["sessions"].append(row_data)
+    for key, value in all_data.items():
+        try:
+            os.makedirs(csv_dir + '/' + key + '/', exist_ok=True)
+            pl.DataFrame(value).write_csv(csv_dir + '/' + key + '/' + os.path.basename(filepath).replace('.json', '.csv'))
+        except pl.exceptions.ComputeError:
+            print(f"Warning: Impossible to load {key} for file {os.path.basename(filepath)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Process JSON files in parallel.")
-    parser.add_argument("--json_dir", type=str, default='/home/albert/repos/coros_explo/.json_data',
+    parser.add_argument("--json_dir", type=str,
                        help="Directory containing JSON files (input)")
-    parser.add_argument("--csv_dir", type=str, default='/home/albert/repos/coros_explo/.csv_data',
+    parser.add_argument("--csv_dir", type=str,
                        help="Directory containing CSV files (output)")
     args = parser.parse_args()
 

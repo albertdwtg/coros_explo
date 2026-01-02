@@ -19,23 +19,23 @@ tasks:
     cmds:
       - |
         set -eo pipefail
-        echo "Creating Venv if it doesn't exist"
-        if [ ! -d "{{.ROOT}}/{{.VENV_DIR}}" ]; then
-          python3 -m venv {{.ROOT}}/{{.VENV_DIR}}
-        fi
-        echo "Installing requirements in Venv ..."
-        uv pip install -r {{.ROOT}}/{{.REQUIREMENTS_FILE}} -p {{.ROOT}}/{{.VENV_DIR}} --quiet
-        echo "Creating JSON data directory if it doesn't exist"
-        mkdir -p {{.ROOT}}/{{.JSON_DATA_DIR}}
-        echo "Unzip {{.ZIP_FILE}} to {{.DATA_DIR}}"
-        unzip -o {{.ROOT}}/{{.ZIP_FILE}} -d {{.ROOT}}/{{.DATA_DIR}} > /dev/null
-        for fit_file in {{.ROOT}}/{{.DATA_DIR}}/*.fit; do
-          filename=$(basename "$fit_file" .fit)
-          echo "Processing $fit_file to {{.ROOT}}/{{.JSON_DATA_DIR}}/${filename}.json"
-          {{.ROOT}}/{{.VENV_DIR}}/bin/fitjson --pretty -o "{{.JSON_DATA_DIR}}/${filename}.json" "$fit_file"
-        done
-        echo "Parsing JSON data to CSV ..."
-        python3 ./json_to_csv.py --json_dir {{.ROOT}}/{{.JSON_DATA_DIR}} --csv_dir {{.ROOT}}/{{.CSV_DATA_DIR}}
+        # echo "Creating Venv if it doesn't exist"
+        # if [ ! -d "{{.ROOT}}/{{.VENV_DIR}}" ]; then
+        #   python3 -m venv {{.ROOT}}/{{.VENV_DIR}}
+        # fi
+        # echo "Installing requirements in Venv ..."
+        # uv pip install -r {{.ROOT}}/{{.REQUIREMENTS_FILE}} -p {{.ROOT}}/{{.VENV_DIR}} --quiet
+        # echo "Creating JSON data directory if it doesn't exist"
+        # mkdir -p {{.ROOT}}/{{.JSON_DATA_DIR}}
+        # echo "Unzip {{.ZIP_FILE}} to {{.DATA_DIR}}"
+        # unzip -o {{.ROOT}}/{{.ZIP_FILE}} -d {{.ROOT}}/{{.DATA_DIR}} > /dev/null
+        # for fit_file in {{.ROOT}}/{{.DATA_DIR}}/*.fit; do
+        #   filename=$(basename "$fit_file" .fit)
+        #   echo "Processing $fit_file to {{.ROOT}}/{{.JSON_DATA_DIR}}/${filename}.json"
+        #   {{.ROOT}}/{{.VENV_DIR}}/bin/fitjson --pretty -o "{{.JSON_DATA_DIR}}/${filename}.json" "$fit_file"
+        # done
+        # echo "Parsing JSON data to CSV ..."
+        {{.ROOT}}/{{.VENV_DIR}}/bin/python ./json_to_csv.py --json_dir {{.ROOT}}/{{.JSON_DATA_DIR}} --csv_dir {{.ROOT}}/{{.CSV_DATA_DIR}}
     preconditions:
       - sh: command -v python3
         msg: "Python 3 is not installed. Please install it before continuing."
